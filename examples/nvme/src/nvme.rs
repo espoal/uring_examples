@@ -52,4 +52,5 @@ fn iowr(t: usize, nr: usize, size: usize) -> usize {
 
 pub fn nvme_uring_cmd_io() -> u32 {
     iowr('N' as usize, 0x80, core::mem::size_of::<nvme_uring_cmd>()) as u32
+    //iowr('N' as usize, 0x80, 32) as u32
 }

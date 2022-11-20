@@ -76,7 +76,7 @@ fn main() -> io::Result<()> {
 
     println!("cmd bytes: {:?}", cmd_bytes);
     println!("cqe: {:?}", cqe);
-    println!("big cqe: {:?}", cqe.big_cqe());
+    //println!("big cqe: {:?}", cqe.big_cqe());
 
     println!("cmd: {:?}", nvme_read);
 
@@ -86,6 +86,7 @@ fn main() -> io::Result<()> {
 
     let content = std::str::from_utf8(&buff).unwrap();
     //println!("bytes read: {:?}", content);
+    println!("bytes read: {:?}", buff);
 
     Ok(())
 }
