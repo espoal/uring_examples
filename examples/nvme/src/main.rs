@@ -3,7 +3,6 @@ mod nvme;
 use std::os::unix::io::AsRawFd;
 use std::{fs, io};
 
-use io_uring::squeue::Entry;
 use io_uring::types::Fd;
 use io_uring::{cqueue, opcode, squeue, IoUring};
 
@@ -22,17 +21,17 @@ fn main() -> io::Result<()> {
     // sudo nvme id-ns /dev/nvme0n1
     let nsid = 1;
 
-    let mut builder = IoUring::<squeue::Entry128, cqueue::Entry32>::generic_builder();
+    let builder = IoUring::<squeue::Entry128, cqueue::Entry32>::generic_builder();
     let mut ring = builder.build(128)?;
 
     let fd = fs::File::open(path)?;
 
     let mut buff = [0u8; 4096];
-    let mut buf: *mut u8 = &mut buff[0];
+    let buf: *mut u8 = &mut buff[0];
     let tfd = Fd(fd.as_raw_fd());
 
     // TODO: check correct cmd_opcode
-    let cmd_op = nvme_uring_cmd_io() as u32;
+    let cmd_op = nvme_uring_cmd_io();
     let opcode = 0x02 as u8;
     let data_addr = buf as u64;
     let data_len = 1 as u32;
@@ -77,6 +76,8 @@ fn main() -> io::Result<()> {
 
     println!("cmd bytes: {:?}", cmd_bytes);
     println!("cqe: {:?}", cqe);
+    println!("big cqe: {:?}", cqe.big_cqe());
+
     println!("cmd: {:?}", nvme_read);
 
     assert_eq!(cqe.user_data(), 0x22);
