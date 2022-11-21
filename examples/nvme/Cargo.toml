@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 io-uring = { version = "*", features = ["unstable"] }
+nix = { version = "0.24", features = ["ioctl"] }

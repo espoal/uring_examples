@@ -6,7 +6,7 @@ use std::{fs, io};
 use io_uring::types::Fd;
 use io_uring::{cqueue, opcode, squeue, IoUring};
 
-use crate::nvme::nvme_uring_cmd_io;
+use crate::nvme::{nvme_uring_cmd_io, NVME_URING_CMD_IO};
 use nvme::nvme_uring_cmd;
 
 // Double check output with:
@@ -31,10 +31,11 @@ fn main() -> io::Result<()> {
     let tfd = Fd(fd.as_raw_fd());
 
     // TODO: check correct cmd_opcode
-    let cmd_op = nvme_uring_cmd_io();
+    //let cmd_op = nvme_uring_cmd_io();
+    let cmd_op = NVME_URING_CMD_IO;
     let opcode = 0x02 as u8;
     let data_addr = buf as u64;
-    let data_len = 9 as u32;
+    let data_len = 12 as u32;
     let cdw10 = (lba & 0xffffffff) as u32;
     let cdw11 = (lba >> 32) as u32;
     let cdw12 = num_blocks - 1;
@@ -84,9 +85,9 @@ fn main() -> io::Result<()> {
     //assert!(cqe.result() >= 0, "read error: {}", cqe.result());
     println!("read {} bytes", cqe.result());
 
-    let content = std::str::from_utf8(&buff).unwrap();
+    //let content = std::str::from_utf8(&buff).unwrap();
     //println!("bytes read: {:?}", content);
-    //println!("bytes read: {:?}", buff);
+    println!("bytes read: {:?}", buff);
 
     Ok(())
 }

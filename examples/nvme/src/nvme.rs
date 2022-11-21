@@ -1,7 +1,4 @@
-// Questions:
-// 1. How do I setup large queues? and in general pass flags to the ring?
-// 2. Is buff done correctly?
-// 3. Does it looks right?
+use nix::request_code_readwrite;
 
 pub type __u8 = std::os::raw::c_uchar;
 pub type __u16 = std::os::raw::c_ushort;
@@ -54,3 +51,6 @@ pub fn nvme_uring_cmd_io() -> u32 {
     iowr('N' as usize, 0x80, core::mem::size_of::<nvme_uring_cmd>()) as u32
     //iowr('N' as usize, 0x80, 32) as u32
 }
+
+pub const NVME_URING_CMD_IO: u32 =
+    request_code_readwrite!('N', 0x80, core::mem::size_of::<nvme_uring_cmd>()) as u32;
