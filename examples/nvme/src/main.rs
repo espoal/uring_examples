@@ -37,7 +37,7 @@ fn main() -> io::Result<()> {
     let data_len = 9 as u32;
     let cdw10 = (lba & 0xffffffff) as u32;
     let cdw11 = (lba >> 32) as u32;
-    let cdw12 = num_blocks;
+    let cdw12 = num_blocks - 1;
 
     let cmd = nvme_uring_cmd {
         opcode,
