@@ -14,7 +14,7 @@ use nvme::nvme_uring_cmd;
 
 fn main() -> io::Result<()> {
     // Params
-    let path = "/dev/nvme0n1";
+    let path = "/dev/ng0n1";
     let lba: u64 = 1000000;
     let num_blocks: u32 = 1;
 
@@ -26,7 +26,7 @@ fn main() -> io::Result<()> {
 
     let fd = fs::File::open(path)?;
 
-    let mut buff = [0u8; 4096];
+    let mut buff = vec![0u8; 4096];
     let buf: *mut u8 = &mut buff[0];
     let tfd = Fd(fd.as_raw_fd());
 
@@ -34,10 +34,10 @@ fn main() -> io::Result<()> {
     let cmd_op = nvme_uring_cmd_io();
     let opcode = 0x02 as u8;
     let data_addr = buf as u64;
-    let data_len = 1 as u32;
+    let data_len = 9 as u32;
     let cdw10 = (lba & 0xffffffff) as u32;
     let cdw11 = (lba >> 32) as u32;
-    let cdw12 = num_blocks - 1;
+    let cdw12 = num_blocks;
 
     let cmd = nvme_uring_cmd {
         opcode,
@@ -86,7 +86,7 @@ fn main() -> io::Result<()> {
 
     let content = std::str::from_utf8(&buff).unwrap();
     //println!("bytes read: {:?}", content);
-    println!("bytes read: {:?}", buff);
+    //println!("bytes read: {:?}", buff);
 
     Ok(())
 }
