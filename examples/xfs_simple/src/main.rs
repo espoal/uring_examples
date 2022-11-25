@@ -7,7 +7,6 @@ fn main() -> io::Result<()> {
     let mut ring = IoUring::new(8)?;
 
     let path = "/home/mamluk/Projects/uring_examples/README.md";
-    //let fd = fs::File::open(path)?;
     let mut buf = vec![0; 1024];
 
     let dirfd = types::Fd(libc::AT_FDCWD);
