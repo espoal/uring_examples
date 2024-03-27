@@ -17,7 +17,7 @@ struct Connection {
 }
 
 fn main() -> io::Result<()> {
-    println!("Hello, world!");
+    println!("Starting TCP socket example!");
 
     let mut ring = IoUring::new(128)?;
     let listener = TcpListener::bind(("127.0.0.1", 3456))?;

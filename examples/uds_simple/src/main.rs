@@ -60,12 +60,19 @@ fn main() -> io::Result<()> {
                 let byte_read = byte_read as usize;
                 let msg = String::from_utf8(buffs[id].clone()).unwrap();
                 println!("received: {}", msg);
+                prepend_string(&mut buffs[id], byte_read);
+                submit_send(&mut ring, &mut connections[id], &mut buffs[id]);
             }
             State::Send => {
-                let byte_sent = cqe.result();
-                if byte_sent < 0 {
+                let bytes_written = cqe.result();
+                if bytes_written == -32 {
+                    connections[id].state = State::Closed;
+                }
+                if bytes_written < 0 {
                     break 'outer;
                 }
+                println!("write fd: {}", bytes_written);
+                submit_recv(&mut ring, &mut connections[id], &mut buffs[id]);
             }
             State::Closed => unsafe {
                 libc::close(connection.fd_conn);
@@ -112,4 +119,37 @@ fn submit_recv(ring: &mut IoUring, request: &mut Connection, buf: &mut Vec<u8>) 
             .push(&read_e)
             .expect("submission queue is full");
     }
+}
+
+fn submit_send(ring: &mut IoUring, connection: &mut Connection, buf: &mut Vec<u8>) {
+    let read_e = opcode::Send::new(
+        types::Fd(connection.fd_conn),
+        buf.as_mut_ptr(),
+        buf.len() as u32,
+    )
+        .build()
+        .user_data(connection.id as u64);
+
+    connection.state = State::Send;
+
+    unsafe {
+        ring.submission()
+            .push(&read_e)
+            .expect("submission queue is full");
+    }
+}
+
+fn prepend_string(vec: &mut Vec<u8>, len: usize) {
+    let msg = "Hello \"".as_bytes();
+    let msg_len = msg.len();
+    for i in (0..len).rev() {
+        vec[i + msg_len] = vec[i];
+    }
+    for i in 0..msg_len {
+        vec[i] = msg[i];
+    }
+
+    vec[len + msg_len - 1] = '\"' as u8;
+    vec[len + msg_len] = '!' as u8;
+    vec[len + msg_len + 1] = '\n' as u8;
 }
