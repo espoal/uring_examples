@@ -1,4 +1,4 @@
-use io_uring::{opcode, squeue, types, IoUring};
+use io_uring::{opcode, types, IoUring};
 use std::net::TcpListener;
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::{io, ptr};
@@ -34,7 +34,7 @@ fn main() -> io::Result<()> {
         println!("cqe: {:?}", cqe);
 
         let id = cqe.user_data() as usize;
-        let mut connection = connections.get_mut(id).unwrap();
+        let connection = connections.get_mut(id).unwrap();
         match connection.state {
             State::Accept => {
                 let fd_conn = cqe.result();
@@ -104,8 +104,8 @@ fn submit_recv(ring: &mut IoUring, request: &mut Connection, buf: &mut Vec<u8>) 
         buf.as_mut_ptr(),
         buf.len() as u32,
     )
-    .build()
-    .user_data(request.id as u64);
+        .build()
+        .user_data(request.id as u64);
 
     request.state = State::Recv;
 
@@ -122,8 +122,8 @@ fn submit_send(ring: &mut IoUring, connection: &mut Connection, buf: &mut Vec<u8
         buf.as_mut_ptr(),
         buf.len() as u32,
     )
-    .build()
-    .user_data(connection.id as u64);
+        .build()
+        .user_data(connection.id as u64);
 
     connection.state = State::Send;
 
