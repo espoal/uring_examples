@@ -13,6 +13,9 @@ struct Connection {
     fd_conn: RawFd,
 }
 
+// TODO: handle ENONBUFs error
+// TODO: handle CQE_F_MORE
+
 fn main() -> io::Result<()> {
     println!("Starting TCP socket example!");
 
