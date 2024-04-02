@@ -1,7 +1,8 @@
-use io_uring::{opcode, types, IoUring};
+use io_uring::{opcode, types, IoUring, cqueue};
 use std::net::TcpListener;
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::{io};
+use libc;
 
 enum State {
     Accept,
@@ -13,8 +14,8 @@ struct Connection {
     fd_conn: RawFd,
 }
 
-// TODO: handle ENONBUFs error
-// TODO: handle CQE_F_MORE
+// TODO: handle multiple connections
+// TODO: handle disconnections
 
 fn main() -> io::Result<()> {
     println!("Starting TCP socket example!");
@@ -62,6 +63,11 @@ fn main() -> io::Result<()> {
                     fd_conn,
                 });
 
+                if !cqueue::more(cqe.flags()) {
+                    println!("error: accept branch deactivated, case unhandled");
+                    break 'outer;
+                }
+
                 submit_multishot_recv(&mut ring, connections.get_mut(conn_id).unwrap());
 
                 println!("accepted fd: {}", fd_conn);
@@ -72,10 +78,20 @@ fn main() -> io::Result<()> {
                     println!("byte_read == 0");
                     continue 'outer;
                 }
-                if byte_read < 0 {
-                    println!("byte_read < 0");
+                if byte_read == -libc::ENOBUFS {
+                    println!("error: provided buffers are full!");
                     break 'outer;
                 }
+                if byte_read < 0 {
+                    println!("error: byte_read < 0");
+                    break 'outer;
+                }
+
+                if !cqueue::more(cqe.flags()) {
+                    println!("error: there is no more data in the socket, case unhandled");
+                    break 'outer;
+                }
+
                 let byte_read = byte_read as usize;
                 println!("byte_read: {}", byte_read);
                 let resp = prepend_string(&mut bufs, byte_read, cqe.flags());
