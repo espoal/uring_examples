@@ -14,6 +14,8 @@ Rust io_uring examples, based on [@tokio/io_uring](https://github.com/tokio-rs/i
 # TODOs:
 
 - UDP example
+- Fix `xfs_simple` example
+- Better docs all around
 - Use [ring mapped buffers](https://github.com/axboe/liburing/wiki/io_uring-and-networking-in-2023#provided-buffers)
 
 # Questions
