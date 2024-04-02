@@ -9,7 +9,6 @@ enum State {
 }
 
 struct Connection {
-    id: usize,
     state: State,
     fd_conn: RawFd,
 }
@@ -21,9 +20,9 @@ fn main() -> io::Result<()> {
     let listener = TcpListener::bind(("127.0.0.1", 3456))?;
     let tcp_socket = listener.as_raw_fd();
     // let mut buffs = vec![vec![0u8; 4096]; 128];
-    let mut bufs = vec![0; 2 * 1024];
+    let mut bufs = vec![0; 4 * 1024];
 
-    let provide_bufs_e = opcode::ProvideBuffers::new(bufs.as_mut_ptr(), 1024, 2, 0xdeed, 0)
+    let provide_bufs_e = opcode::ProvideBuffers::new(bufs.as_mut_ptr(), 1024, 4, 0xdeed, 0)
         .build()
         .user_data(0x21)
         .into();
@@ -36,7 +35,7 @@ fn main() -> io::Result<()> {
 
 
     let mut connections: Vec<Connection> = Vec::with_capacity(16);
-    submit_multishot_accept(&mut ring, tcp_socket, &mut connections);
+    submit_multishot_accept(&mut ring, tcp_socket);
 
     'outer: loop {
         ring.submit_and_wait(1)?;
@@ -56,7 +55,6 @@ fn main() -> io::Result<()> {
                 }
                 let conn_id = connections.len();
                 connections.push(Connection {
-                    id: conn_id,
                     state: State::Accept,
                     fd_conn,
                 });
@@ -77,9 +75,22 @@ fn main() -> io::Result<()> {
                 }
                 let byte_read = byte_read as usize;
                 println!("byte_read: {}", byte_read);
-                let resp = prepend_string(&mut bufs, byte_read);
+                let resp = prepend_string(&mut bufs, byte_read, cqe.flags());
                 println!("resp: {}", resp);
                 // println!("bufs: {:?}", bufs);
+                let buf_id = io_uring::cqueue::buffer_select(cqe.flags()).unwrap();
+                if buf_id == 3 {
+                    let provide_bufs_e = opcode::ProvideBuffers::new(bufs.as_mut_ptr(), 1024, 4, 0xdeed, 0)
+                        .build()
+                        .user_data(0x21)
+                        .into();
+
+                    unsafe {
+                        ring.submission()
+                            .push(&provide_bufs_e)
+                            .expect("submission queue is full");
+                    }
+                }
             }
             33 => {
                 println!("bufs provided");
@@ -93,7 +104,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn submit_multishot_accept(ring: &mut IoUring, tcp_socket: RawFd, connections: &mut Vec<Connection>) {
+fn submit_multishot_accept(ring: &mut IoUring, tcp_socket: RawFd) {
     let id: u64 = 0xdead;
 
     let multishot_accept = opcode::AcceptMulti::new(types::Fd(tcp_socket))
@@ -125,8 +136,12 @@ fn submit_multishot_recv(ring: &mut IoUring, connection: &mut Connection) {
     }
 }
 
-fn prepend_string(vec: &mut Vec<u8>, len: usize) -> String {
-    let resp = format!("Hello {}!", String::from_utf8(vec[0..len - 1].to_vec()).unwrap());
+fn prepend_string(vec: &mut Vec<u8>, len: usize, flags: u32) -> String {
+    let buf_id = io_uring::cqueue::buffer_select(flags).unwrap();
+    let buf_start = 1024 * buf_id as usize;
+    let buf_end = buf_start + len - 1;
+    println!("Buffer: {}", buf_id);
+    let resp = format!("Hello {}!", String::from_utf8(vec[buf_start..buf_end].to_vec()).unwrap());
     return resp;
 }
 
