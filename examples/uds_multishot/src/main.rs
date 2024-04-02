@@ -1,7 +1,8 @@
 use io_uring::{opcode, types, IoUring};
-use std::net::TcpListener;
-use std::os::unix::io::{AsRawFd, RawFd};
+use std::os::unix::net::UnixListener;
 use std::{io, ptr};
+use std::io::prelude::*;
+use std::os::fd::{AsRawFd, RawFd};
 
 enum State {
     Accept,
@@ -17,15 +18,16 @@ struct Connection {
 }
 
 fn main() -> io::Result<()> {
-    println!("Starting TCP socket example!");
+    println!("Starting Unix Domain Socket example!");
+    use std::io::prelude::*;
 
     let mut ring = IoUring::new(128)?;
-    let listener = TcpListener::bind(("127.0.0.1", 3456))?;
-    let tcp_socket = listener.as_raw_fd();
+    let mut listener = UnixListener::bind("/tmp/uds.sock")?;
+    let uds_socket = listener.as_raw_fd();
     let mut buffs = vec![vec![0u8; 4096]; 128];
 
-    let mut connections: Vec<Connection> = Vec::with_capacity(10);
-    submit_accept(&mut ring, tcp_socket, &mut connections);
+    let mut connections: Vec<Connection> = Vec::with_capacity(8);
+    submit_accept(&mut ring, uds_socket, &mut connections);
 
     'outer: loop {
         ring.submit_and_wait(1)?;
@@ -44,7 +46,7 @@ fn main() -> io::Result<()> {
                 connections[id].fd_conn = fd_conn;
 
                 println!("accepted fd: {}", fd_conn);
-                submit_accept(&mut ring, tcp_socket, &mut connections);
+                submit_accept(&mut ring, uds_socket, &mut connections);
                 submit_recv(&mut ring, &mut connections[id], &mut buffs[id]);
             }
             State::Recv => {
@@ -56,6 +58,8 @@ fn main() -> io::Result<()> {
                     break 'outer;
                 }
                 let byte_read = byte_read as usize;
+                let msg = String::from_utf8(buffs[id].clone()).unwrap();
+                println!("received: {}", msg);
                 prepend_string(&mut buffs[id], byte_read);
                 submit_send(&mut ring, &mut connections[id], &mut buffs[id]);
             }
@@ -76,10 +80,11 @@ fn main() -> io::Result<()> {
         }
     }
 
+
     Ok(())
 }
 
-fn submit_accept(ring: &mut IoUring, tcp_socket: RawFd, connections: &mut Vec<Connection>) {
+fn submit_accept(ring: &mut IoUring, socket: RawFd, connections: &mut Vec<Connection>) {
     let id = connections.len();
     connections.push(Connection {
         id,
@@ -87,7 +92,7 @@ fn submit_accept(ring: &mut IoUring, tcp_socket: RawFd, connections: &mut Vec<Co
         fd_conn: 0,
     });
 
-    let accept = opcode::Accept::new(types::Fd(tcp_socket), ptr::null_mut(), ptr::null_mut())
+    let accept = opcode::Accept::new(types::Fd(socket), ptr::null_mut(), ptr::null_mut())
         .build()
         .user_data(id as u64);
 
