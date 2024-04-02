@@ -1,5 +1,5 @@
 # Introduction
-Rust io_uring examples, based on [@tokio/io_uring](https://github.com/tokio-rs/io-uring)
+Rust io_uring examples, based on [@tokio/io-uring](https://github.com/tokio-rs/io-uring)
 
 ## Networking examples
 - [tcp_simple](examples/tcp_simple): A simple echo server in TCP, using only basic functionality
