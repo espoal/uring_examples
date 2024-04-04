@@ -6,7 +6,7 @@ use std::os::unix::io::AsRawFd;
 fn main() -> io::Result<()> {
     let mut ring = IoUring::new(8)?;
 
-    let path = "/home/mamluk/Projects/uring_examples/README.md";
+    let path = "/home/mamluk/Projects/generic/uring_examples/README.md";
     let mut buf = vec![0; 1024];
 
     let dirfd = types::Fd(libc::AT_FDCWD);

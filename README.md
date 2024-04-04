@@ -8,7 +8,7 @@ Rust io_uring examples, based on [@tokio/io-uring](https://github.com/tokio-rs/i
 - [uds_multishot](examples/uds_multishot): As in `tcp_multishot`, but with Unix Domain Sockets. (**pending**)
 
 ## Storage examples
-- [xfs_simple](examples/xfs_simple): Using `io_uring` to read a file from XFS (**not working**)
+- [xfs_simple](examples/xfs_simple): Using `io_uring` to read a file from XFS
 - [nvme](examples/nvme): Using `io_uring` to read a NVMe device
 
 # TODOs:

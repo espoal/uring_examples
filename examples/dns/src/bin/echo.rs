@@ -18,7 +18,7 @@ fn main() -> std::io::Result<()> {
 
     stream.write("second test \n".as_ref()).expect("Failed to send packet");
     println!("Sent data to server second time!");
-    
+
     let count = stream.read(&mut buffer)?;
     println!("Received data from server! {} bytes", count);
     println!("Response: {:?}", String::from_utf8_lossy(&buffer[..count]));
