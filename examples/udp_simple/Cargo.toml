@@ -1,10 +1,9 @@
 [package]
-name = "dns"
+name = "udp_simple"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-simple-dns = "0.7.0"
-io-uring = { version = "*" }
+io-uring = "0.6.3"
