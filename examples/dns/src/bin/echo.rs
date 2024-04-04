@@ -5,11 +5,11 @@ fn main() -> std::io::Result<()> {
     println!("Starting simple TCP echo example!");
 
     let echo_servers = [
-        "45.79.112.203:4242",
+        "tcpbin.com:4242",
         "localhost:8080"
     ];
 
-    let mut stream = TcpStream::connect(echo_servers[1])
+    let mut stream = TcpStream::connect(echo_servers[0])
         .expect("Failed to connect to server");
     println!("Connected to server!");
 
