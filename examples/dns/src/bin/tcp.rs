@@ -35,8 +35,10 @@ fn main() -> std::io::Result<()> {
     stream.write(&unwrapped).expect("Failed to send packet");
 
 
-    let mut buffer = [0; 512];
-    stream.read(&mut buffer)?;
+    let mut buffer = [0; 4096];
+    let count = stream.read(&mut buffer)?;
+
+    println!("Received data from server! {} bytes", count);
 
     let response = Packet::parse(&buffer).expect("Failed to parse packet");
 
