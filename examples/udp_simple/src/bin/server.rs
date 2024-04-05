@@ -154,12 +154,17 @@ fn print_msg(vec: &mut Vec<u8>, len: usize, flags: u32, msg_hdr: libc::msghdr) {
 
     // I need to parse twice, once to get the name length, and once to parse again
     // with the correct name length, otherwise the payload will be wrong
-    msg_hdr.msg_namelen = msg_out.incoming_name_len();
+    // msg_hdr.msg_namelen = msg_out.incoming_name_len();
+
+    // Or I can read the first byte from the buffer, which stores the length of the name
+    msg_hdr.msg_namelen = vec[buf_start] as _;
     let msg_out = types::RecvMsgOut::parse(&vec[buf_start..buf_end], &msg_hdr).unwrap();
     println!("msg_out: {:?}", msg_out);
 
     let payload = String::from_utf8_lossy(msg_out.payload_data());
     println!("payload: {:?}", payload);
+
+    println!("buffer: {:?}", vec[buf_start..buf_end].to_vec());
 
     /*println!("name len: {:?}", msg_out.incoming_name_len());
     println!("name: {:?}", msg_out.name_data());
