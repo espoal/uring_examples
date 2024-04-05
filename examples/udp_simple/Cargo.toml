@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 io-uring = "0.6.3"
+libc = "0.2.153"
