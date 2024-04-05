@@ -33,6 +33,7 @@ fn main() -> std::io::Result<()> {
 
     let mut msg_hdr: libc::msghdr = unsafe { std::mem::zeroed() };
     // I copied this from tokio/io-uring test code, I don't know why it works
+    // https://github.com/tokio-rs/io-uring/blob/master/io-uring-test/src/tests/net.rs
     msg_hdr.msg_namelen = 16;
 
 
