@@ -27,6 +27,7 @@ fn main() -> std::io::Result<()> {
     ring.submit_and_wait(1)?;
 
 
+    // Maybe I should set the IP_PTKINFO flag
     let udp_socket = UdpSocket::bind(("0.0.0.0", 12345))?;
     let udp_fd = udp_socket.as_raw_fd();
 
