@@ -31,11 +31,12 @@ fn main() -> std::io::Result<()> {
     let udp_fd = udp_socket.as_raw_fd();
 
 
-    let mut msg_hdr = MaybeUninit::<libc::msghdr>::zeroed();
+    let mut msg_hdr: libc::msghdr = unsafe { std::mem::zeroed() };
+    msg_hdr.msg_namelen = 16;
 
 
     // submit_multishot_accept(&mut ring, udp_fd);
-    submit_multishot_recvmsg(&mut ring, udp_fd, msg_hdr.as_mut_ptr());
+    submit_multishot_recvmsg(&mut ring, udp_fd, &msg_hdr as *const _);
 
     'outer: loop {
         ring.submit_and_wait(1)?;
@@ -69,12 +70,12 @@ fn main() -> std::io::Result<()> {
 
                 let byte_read = byte_read as usize;
                 println!("byte_read: {}", byte_read);
-                let msg = read_bufs(&mut bufs, byte_read, cqe.flags());
-                println!("msg: {}", msg);
-                print_msghdr_2(&mut bufs, byte_read, cqe.flags());
+                // let msg = read_bufs(&mut bufs, byte_read, cqe.flags());
+                // println!("msg: {}", msg);
+                print_msghdr_3(&mut bufs, byte_read, cqe.flags(), msg_hdr);
 
-                let resp = format!("echo: {}", msg);
-                println!("resp: {}", resp);
+                // let resp = format!("echo: {}", msg);
+                // println!("resp: {}", resp);
                 // Broken code, can't understand where to send the message
                 /*let message = match CString::new(resp) {
                     Ok(cstr) => { cstr }
@@ -142,12 +143,13 @@ fn submit_multishot_recv(ring: &mut IoUring, socket: RawFd) {
     }
 }
 
-fn submit_multishot_recvmsg(ring: &mut IoUring, socket: RawFd, msg_hdr: *mut msghdr) {
+fn submit_multishot_recvmsg(ring: &mut IoUring, socket: RawFd, msg_hdr: *const msghdr) {
     let read_e = opcode::RecvMsgMulti::new(
         types::Fd(socket),
         msg_hdr,
         0xdeed,
     )
+        .flags(libc::MSG_TRUNC as u32)
         .build()
         .user_data(0xbeef as u64)
         .into();
@@ -167,30 +169,55 @@ fn read_bufs(vec: &mut Vec<u8>, len: usize, flags: u32) -> String {
     resp
 }
 
-fn print_msghdr(msg_hdr: MaybeUninit<msghdr>) {
+fn print_msghdr(msg_hdr: msghdr) {
     println!("msghdr: ");
 
-    unsafe {
-        let un_msg_hdr = msg_hdr.assume_init();
-        println!("msg_name: {:?}", un_msg_hdr.msg_name);
-        println!("msg_namelen: {:?}", un_msg_hdr.msg_namelen);
-        println!("msg_iov: {:?}", un_msg_hdr.msg_iov);
-        println!("msg_iovlen: {:?}", un_msg_hdr.msg_iovlen);
-        println!("msg_control: {:?}", un_msg_hdr.msg_control);
-        println!("msg_controllen: {:?}", un_msg_hdr.msg_controllen);
-        println!("msg_flags: {:?}", un_msg_hdr.msg_flags);
-    }
+    let un_msg_hdr = msg_hdr;
+    println!("msg_name: {:?}", un_msg_hdr.msg_name);
+    println!("msg_namelen: {:?}", un_msg_hdr.msg_namelen);
+    println!("msg_iov: {:?}", un_msg_hdr.msg_iov);
+    println!("msg_iovlen: {:?}", un_msg_hdr.msg_iovlen);
+    println!("msg_control: {:?}", un_msg_hdr.msg_control);
+    println!("msg_controllen: {:?}", un_msg_hdr.msg_controllen);
+    println!("msg_flags: {:?}", un_msg_hdr.msg_flags);
 }
 
-fn print_msghdr_2(vec: &mut Vec<u8>, len: usize, flags: u32) {
+fn print_msghdr_2(vec: &mut Vec<u8>, len: usize, flags: u32, msg_hdr: msghdr) {
     println!("msghdr: ");
 
     let buf_id = io_uring::cqueue::buffer_select(flags).unwrap();
     let buf_start = 1024 * buf_id as usize;
     let buf_end = buf_start + len - 1;
 
-    let msghdr: libc::msghdr = unsafe { std::mem::zeroed() };
+    let mut msg_hdr: libc::msghdr = unsafe { std::mem::zeroed() };
+    msg_hdr.msg_namelen = 16;
 
-    let msg_out = types::RecvMsgOut::parse(&vec[buf_start..buf_end], &msghdr).unwrap();
+    let msg_out = types::RecvMsgOut::parse(&vec[buf_start..buf_end], &msg_hdr).unwrap();
     println!("msg_out: {:?}", msg_out);
+}
+
+fn print_msghdr_3(vec: &mut Vec<u8>, len: usize, flags: u32, msg_hdr: msghdr) {
+    println!("msghdr: ");
+
+    let buf_id = io_uring::cqueue::buffer_select(flags).unwrap();
+    let buf_start = 1024 * buf_id as usize;
+    let buf_end = buf_start + len - 1;
+
+    let mut msg_hdr: libc::msghdr = unsafe { std::mem::zeroed() };
+
+    let msg_out = types::RecvMsgOut::parse(&vec[buf_start..buf_end], &msg_hdr).unwrap();
+
+    println!("msg_out: {:?}", msg_out);
+
+    msg_hdr.msg_namelen = msg_out.incoming_name_len();
+    let msg_out = types::RecvMsgOut::parse(&vec[buf_start..buf_end], &msg_hdr).unwrap();
+
+    println!("msg_out: {:?}", msg_out);
+    println!("name len: {:?}", msg_out.incoming_name_len());
+    println!("name: {:?}", msg_out.name_data());
+    println!("control len: {:?}", msg_out.incoming_control_len());
+    println!("control: {:?}", msg_out.control_data());
+    println!("payload len: {:?}", msg_out.incoming_payload_len());
+    println!("payload: {:?}", msg_out.payload_data());
+    println!("flags: {:?}", msg_out.flags());
 }
