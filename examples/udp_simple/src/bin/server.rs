@@ -32,6 +32,7 @@ fn main() -> std::io::Result<()> {
 
 
     let mut msg_hdr: libc::msghdr = unsafe { std::mem::zeroed() };
+    // I copied this from tokio/io-uring test code, I don't know why it works
     msg_hdr.msg_namelen = 16;
 
 
@@ -138,15 +139,15 @@ fn read_bufs(vec: &mut Vec<u8>, len: usize, flags: u32) -> String {
     resp
 }
 
-fn print_msg(vec: &mut Vec<u8>, len: usize, flags: u32, msg_hdr: libc::msghdr) {
+fn print_msg(vec: &mut Vec<u8>, len: usize, flags: u32, mut msg_hdr: libc::msghdr) {
     println!("msghdr: ");
 
     let buf_id = io_uring::cqueue::buffer_select(flags).unwrap();
     let buf_start = 1024 * buf_id as usize;
-    let buf_end = buf_start + len - 1;
+    let buf_end = buf_start + len;
 
     // Why it doesn't change if I use the original msg_hdr, or if I create a new one?
-    let mut msg_hdr: libc::msghdr = unsafe { std::mem::zeroed() };
+    // let mut msg_hdr: libc::msghdr = unsafe { std::mem::zeroed() };
 
     let msg_out = types::RecvMsgOut::parse(&vec[buf_start..buf_end], &msg_hdr).unwrap();
 
