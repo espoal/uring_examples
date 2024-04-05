@@ -75,8 +75,11 @@ fn main() -> std::io::Result<()> {
                 println!("byte_read: {}", byte_read);
 
                 println!("namelen: {:?}", msg_hdr.msg_namelen);
-                print_msg(&mut bufs, byte_read, cqe.flags(), msg_hdr);
+                let (msg, port) = print_msg(&mut bufs, byte_read, cqe.flags(), msg_hdr);
 
+
+                udp_socket.send_to(msg.as_ref(), ("127.0.0.1", port))
+                    .expect("Failed to send packet");
 
                 // Broken code, can't understand how to send the message
                 /*let message = match CString::new(resp) {
@@ -150,7 +153,7 @@ name: [2, 0, 129, 54, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
 
 
  */
-fn print_msg(vec: &mut Vec<u8>, len: usize, flags: u32, mut msg_hdr: libc::msghdr) {
+fn print_msg(vec: &mut Vec<u8>, len: usize, flags: u32, mut msg_hdr: libc::msghdr) -> (String, u16) {
     println!("msghdr: ");
 
     let buf_id = io_uring::cqueue::buffer_select(flags).unwrap();
@@ -170,5 +173,13 @@ fn print_msg(vec: &mut Vec<u8>, len: usize, flags: u32, mut msg_hdr: libc::msghd
 
     println!("buffer: {:?}", vec[buf_start..buf_end].to_vec());
 
-    println!("name: {:?}", msg_out.name_data());
+    let name = msg_out.name_data();
+    println!("name: {:?}", name);
+
+    let port = u16::from_be_bytes([name[2], name[3]]);
+    println!("port: {:?}", port);
+
+
+    return (payload.parse().unwrap(), port)
+
 }
