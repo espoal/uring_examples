@@ -72,7 +72,8 @@ fn main() -> std::io::Result<()> {
                 println!("msghdr: {:?}", msg);
                 let resp = format!("echo: {}", msg);
                 println!("resp: {}", resp);
-                let message = match CString::new(resp) {
+                // Broken code, can't understand where to send the message
+                /*let message = match CString::new(resp) {
                     Ok(cstr) => { cstr }
                     Err(_) => { CString::new("error converting string!").unwrap() }
                 };
@@ -88,7 +89,7 @@ fn main() -> std::io::Result<()> {
                     ring.submission()
                         .push(&send_e)
                         .expect("submission queue is full");
-                }
+                }*/
             }
             0xdead => {
                 println!("send operation");
