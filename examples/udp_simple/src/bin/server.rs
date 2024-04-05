@@ -70,11 +70,17 @@ fn main() -> std::io::Result<()> {
                 let msg = read_bufs(&mut bufs, byte_read, cqe.flags());
                 println!("msg: {}", msg);
                 println!("msghdr: {:?}", msg);
-                /*let resp = format!("echo: {}", msg);
-                let message = CString::new(resp).unwrap();
+                let resp = format!("echo: {}", msg);
+                println!("resp: {}", resp);
+                let message = match CString::new(resp) {
+                    Ok(cstr) => { cstr }
+                    Err(_) => { CString::new("error converting string!").unwrap() }
+                };
+
+                println!("message: {:?}", message.as_bytes());
 
                 let send_e = opcode::Send::
-                new(types::Fd(udp_fd), message.as_ptr() as *const u8, message.as_bytes().len() as u32)
+                new(types::Fd(5), message.as_ptr() as *const u8, message.as_bytes().len() as u32)
                     .build()
                     .user_data(0xdead);
 
@@ -82,9 +88,9 @@ fn main() -> std::io::Result<()> {
                     ring.submission()
                         .push(&send_e)
                         .expect("submission queue is full");
-                }*/
+                }
             }
-            0xdebad => {
+            0xdead => {
                 println!("send operation");
                 println!("cqe: {:?}", cqe);
             }
