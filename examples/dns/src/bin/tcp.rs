@@ -29,7 +29,7 @@ fn main() -> std::io::Result<()> {
 
     println!("Packet bytes: {:?}", unwrapped);
 
-    let mut stream = TcpStream::connect("8.8.8.8:53")
+    let mut stream = TcpStream::connect("8.8.8.8:853")
         .expect("Failed to connect to server");
 
     stream.write(&unwrapped).expect("Failed to send packet");
@@ -39,6 +39,7 @@ fn main() -> std::io::Result<()> {
     let count = stream.read(&mut buffer)?;
 
     println!("Received data from server! {} bytes", count);
+    println!("Response: {:?}", &buffer[..count]);
 
     let response = Packet::parse(&buffer).expect("Failed to parse packet");
 

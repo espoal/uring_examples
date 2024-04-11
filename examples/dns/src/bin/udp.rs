@@ -35,7 +35,10 @@ fn main() -> std::io::Result<()> {
 
 
     let mut buffer = [0; 512];
-    socket.recv(&mut buffer)?;
+    let bytes = socket.recv(&mut buffer)?;
+
+    println!("Received data from server! {} bytes", bytes);
+    println!("Response: {:?}", &buffer[..bytes]);
 
     let response = Packet::parse(&buffer).expect("Failed to parse packet");
 
