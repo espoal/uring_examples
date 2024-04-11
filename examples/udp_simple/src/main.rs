@@ -1,26 +1,26 @@
 use io_uring::{opcode, types, IoUring};
 use std::ffi::CString;
 use std::io;
+use std::net::{UdpSocket};
 use std::os::unix::io::AsRawFd;
 
 fn main() -> io::Result<()> {
     let mut ring = IoUring::new(8)?;
 
-    let path = "/home/mamluk/Projects/generic/uring_examples/README.md";
-    let mut buf = vec![0; 1024];
+    let listener = UdpSocket::bind(("0.0.0.0", 3456))?;
+    let sender = listener.connect("8.8.8.8:53")?;
+    let listener_socket = listener.as_raw_fd();
+    let sender_socket = sender.as_raw_fd();
+    let mut buffs = vec![vec![0u8; 4096]; 128];
 
-    let dirfd = types::Fd(libc::AT_FDCWD);
-    let flags = libc::O_DIRECT as u64 | libc::O_SYNC as u64;
-    let openhow = types::OpenHow::new().flags(flags);
-    let path = CString::new(path.as_bytes())?;
-
-    let open_e = opcode::OpenAt2::new(dirfd, path.as_ptr(), &openhow)
+    let send_e = opcode::Send::
+    new(sender_socket, CString::new("Hello, world!")?.as_ptr(), 13, 0)
         .build()
         .user_data(0x41);
 
     unsafe {
         ring.submission()
-            .push(&open_e)
+            .push(&send_e)
             .expect("submission queue is full");
     }
 
@@ -30,7 +30,7 @@ fn main() -> io::Result<()> {
 
     let fd = cqe.result();
 
-    let read_e = opcode::Read::new(types::Fd(fd.as_raw_fd()), buf.as_mut_ptr(), buf.len() as _)
+    let rcv_e = opcode::Recv::new(listener_socket, buffs[0].as_mut_ptr(), buffs[0].len() as _)
         .build()
         .user_data(0x42);
 
@@ -38,7 +38,7 @@ fn main() -> io::Result<()> {
     // that the entry pushed into submission queue is valid (e.g. fd, buffer).
     unsafe {
         ring.submission()
-            .push(&read_e)
+            .push(&rcv_e)
             .expect("submission queue is full");
     }
 
@@ -55,3 +55,4 @@ fn main() -> io::Result<()> {
 
     Ok(())
 }
+

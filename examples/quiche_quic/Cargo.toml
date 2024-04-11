@@ -1,0 +1,12 @@
+[package]
+name = "quiche_quic"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+quiche = "0.20.1"
+rand = "0.8.5"
+ring = "0.17.8"
+url = "2.5.0"
