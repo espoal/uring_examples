@@ -11,3 +11,7 @@ Cargo.lock
 
 # IntelliJ
 .idea/
+
+# Added by cargo
+
+/target

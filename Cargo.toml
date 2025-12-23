@@ -1,5 +1,16 @@
+[package]
+name = "uring_examples"
+version = "0.1.0"
+edition = "2024"
+
 [workspace]
-members = [
-    "examples/*",
-]
-resolver = "2"
+resolver = "3"
+members = ["10_setup", "20_net", "30_storage", "40_ipc"]
+
+[dependencies]
+axboe-liburing = "2.13.0"
+
+
+[env]
+CLANG_PATH = "/usr/bin/clang-20"
+LIBCLANG_PATH = "/usr/lib/llvm-20/lib"
